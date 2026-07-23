@@ -1,0 +1,15 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.idea
+**/.vs
+**/.vscode
+**/appdata
+**/media
+.git
+.gitignore
+README.md
+LICENSE
+Dockerfile
+docker-compose.yml

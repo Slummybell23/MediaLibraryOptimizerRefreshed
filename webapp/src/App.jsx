@@ -1,121 +1,72 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react'
+
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
+      <p className="text-sm text-zinc-400">{label}</p>
+      <p className="mt-1 text-3xl font-semibold text-zinc-50">{value}</p>
+    </div>
+  )
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [status, setStatus] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetch('/api/system/status')
+      .then((res) => {
+        if (!res.ok) throw new Error(`API returned ${res.status}`)
+        return res.json()
+      })
+      .then(setStatus)
+      .catch((err) => setError(err.message))
+  }, [])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <header className="border-b border-zinc-800">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <h1 className="text-lg font-semibold tracking-tight">
+            Media Library Optimizer
+          </h1>
+          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+            {status ? 'Connected' : error ? 'API unreachable' : 'Connecting…'}
+          </span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-900 bg-red-950 p-4 text-sm text-red-300">
+            Could not reach the backend: {error}
+          </div>
+        )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard label="Media files" value={status?.mediaFileCount ?? '—'} />
+          <StatCard label="Pending jobs" value={status?.pendingJobCount ?? '—'} />
+          <StatCard label="Running jobs" value={status?.runningJobCount ?? '—'} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {status && !status.mediaPathExists && (
+          <div className="mt-6 rounded-lg border border-amber-900 bg-amber-950 p-4 text-sm text-amber-300">
+            Media path <code className="font-mono">{status.mediaPath}</code> does
+            not exist. Mount your media library to this location.
+          </div>
+        )}
+
+        <section className="mt-10">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+            Library
+          </h2>
+          <div className="mt-3 rounded-xl border border-dashed border-zinc-800 p-10 text-center text-sm text-zinc-500">
+            Library scanning is not implemented yet. Discovered media files will
+            appear here.
+          </div>
+        </section>
+      </main>
+    </div>
   )
 }
 

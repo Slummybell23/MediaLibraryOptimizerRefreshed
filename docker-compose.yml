@@ -1,0 +1,17 @@
+services:
+  media-library-optimizer:
+    build: .
+    image: media-library-optimizer:latest
+    container_name: media-library-optimizer
+    ports:
+      - "8080:8080"
+    volumes:
+      # Named volume for the SQLite database and app state.
+      - appdata:/appdata
+      # Point this at your media library. Use :rw so the optimizer can
+      # replace files with their optimized versions.
+      - /path/to/your/media:/media
+    restart: unless-stopped
+
+volumes:
+  appdata:
