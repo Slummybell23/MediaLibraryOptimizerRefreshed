@@ -113,9 +113,11 @@ dotnet ef migrations add <MigrationName>
 
 ```
 ├── Server/            ASP.NET Core Web API
-│   ├── Controllers/   API endpoints (media files, jobs, system status)
+│   ├── Controllers/   API endpoints (media files, jobs, scan, system status)
 │   ├── Data/          EF Core DbContext
 │   ├── Models/        MediaFile, OptimizationJob entities
+│   ├── Options/       Configuration binding (StorageOptions)
+│   ├── Services/      ScannerService (library scanning)
 │   └── Migrations/    EF Core migrations
 ├── webapp/            React + Vite + Tailwind frontend
 ├── Dockerfile         Multi-stage build → single runtime image
@@ -127,6 +129,9 @@ dotnet ef migrations add <MigrationName>
 The backend exposes a small REST API under `/api`:
 
 - `GET /api/system/status` — health/status info (paths, file and job counts)
+- `POST /api/scan` — start a library scan (409 if one is already running)
+- `GET /api/scan/status` — live scan progress (state, files scanned, current file)
+- `POST /api/scan/cancel` — cancel the running scan
 - `GET /api/media-files` — discovered media files
 - `GET /api/media-files/{id}` — a single file including its job history
 - `GET /api/jobs?status=Pending` — optimization jobs, optionally filtered by status

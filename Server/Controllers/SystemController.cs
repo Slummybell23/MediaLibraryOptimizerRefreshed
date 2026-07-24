@@ -1,19 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Server.Data;
 using Server.Models;
+using Server.Options;
 
 namespace Server.Controllers;
 
 [ApiController]
 [Route("api/system")]
-public class SystemController(AppDbContext db, IConfiguration configuration) : ControllerBase
+public class SystemController(AppDbContext db, IOptions<StorageOptions> storage) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<IActionResult> GetStatus()
     {
-        var mediaPath = Path.GetFullPath(configuration["Storage:MediaPath"] ?? "media");
-        var appDataPath = Path.GetFullPath(configuration["Storage:AppDataPath"] ?? "appdata");
+        var mediaPath = Path.GetFullPath(storage.Value.MediaPath);
+        var appDataPath = Path.GetFullPath(storage.Value.AppDataPath);
 
         return Ok(new
         {

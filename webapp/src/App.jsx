@@ -1,27 +1,66 @@
-import { useEffect, useState } from 'react'
-
-function StatCard({ label, value }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-      <p className="text-sm text-zinc-400">{label}</p>
-      <p className="mt-1 text-3xl font-semibold text-zinc-50">{value}</p>
-    </div>
-  )
-}
+import { useCallback, useEffect, useState } from 'react'
+import { getJson, postJson } from './api'
+import StatCard from './components/StatCard'
+import ScanCard from './components/ScanCard'
+import LibraryTable from './components/LibraryTable'
 
 function App() {
   const [status, setStatus] = useState(null)
+  const [scan, setScan] = useState(null)
+  const [files, setFiles] = useState([])
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    fetch('/api/system/status')
-      .then((res) => {
-        if (!res.ok) throw new Error(`API returned ${res.status}`)
-        return res.json()
-      })
-      .then(setStatus)
-      .catch((err) => setError(err.message))
+  const refresh = useCallback(async () => {
+    try {
+      const [systemStatus, scanStatus, mediaFiles] = await Promise.all([
+        getJson('/api/system/status'),
+        getJson('/api/scan/status'),
+        getJson('/api/media-files'),
+      ])
+      setStatus(systemStatus)
+      setScan(scanStatus)
+      setFiles(mediaFiles)
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
   }, [])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  // Poll the scan status while a scan is running; refresh everything once it stops.
+  useEffect(() => {
+    if (scan?.state !== 'Running') return
+    const id = setInterval(async () => {
+      try {
+        const scanStatus = await getJson('/api/scan/status')
+        setScan(scanStatus)
+        if (scanStatus.state !== 'Running') refresh()
+      } catch {
+        // Keep polling; transient errors surface via the next refresh.
+      }
+    }, 1500)
+    return () => clearInterval(id)
+  }, [scan?.state, refresh])
+
+  const startScan = async () => {
+    try {
+      setScan(await postJson('/api/scan'))
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  const cancelScan = async () => {
+    try {
+      setScan(await postJson('/api/scan/cancel'))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -39,7 +78,7 @@ function App() {
       <main className="mx-auto max-w-5xl px-6 py-8">
         {error && (
           <div className="mb-6 rounded-lg border border-red-900 bg-red-950 p-4 text-sm text-red-300">
-            Could not reach the backend: {error}
+            {error}
           </div>
         )}
 
@@ -56,13 +95,16 @@ function App() {
           </div>
         )}
 
+        <section className="mt-6">
+          <ScanCard scan={scan} onStart={startScan} onCancel={cancelScan} />
+        </section>
+
         <section className="mt-10">
           <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
             Library
           </h2>
-          <div className="mt-3 rounded-xl border border-dashed border-zinc-800 p-10 text-center text-sm text-zinc-500">
-            Library scanning is not implemented yet. Discovered media files will
-            appear here.
+          <div className="mt-3">
+            <LibraryTable files={files} />
           </div>
         </section>
       </main>

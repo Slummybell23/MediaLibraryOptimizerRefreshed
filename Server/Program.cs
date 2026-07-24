@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Server.Data;
+using Server.Options;
+using Server.Services;
 
 namespace Server;
 
@@ -13,12 +15,22 @@ public class Program
         // Storage paths are configurable via appsettings or environment variables
         // (Storage__AppDataPath / Storage__MediaPath). In Docker these point at the
         // /appdata and /media volume mounts.
-        var appDataPath = Path.GetFullPath(builder.Configuration["Storage:AppDataPath"] ?? "appdata");
+        builder.Services.Configure<StorageOptions>(
+            builder.Configuration.GetSection(StorageOptions.SectionName));
+        var storage = builder.Configuration.GetSection(StorageOptions.SectionName)
+            .Get<StorageOptions>() ?? new StorageOptions();
+
+        var appDataPath = Path.GetFullPath(storage.AppDataPath);
         Directory.CreateDirectory(appDataPath);
 
         var dbPath = Path.Combine(appDataPath, "medialibraryoptimizer.db");
-        builder.Services.AddDbContext<AppDbContext>(options =>
+        // The factory also registers AppDbContext as a scoped service, so
+        // controllers keep injecting the context directly while singleton
+        // services (ScannerService) create their own instances.
+        builder.Services.AddDbContextFactory<AppDbContext>(options =>
             options.UseSqlite($"Data Source={dbPath}"));
+
+        builder.Services.AddSingleton<ScannerService>();
 
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
